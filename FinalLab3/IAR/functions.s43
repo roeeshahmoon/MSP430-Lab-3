@@ -1,0 +1,103 @@
+#include "msp430g2553.h"
+
+;----------P1&P2 SetUps--------------
+
+        MODULE PortSetUp
+        PUBLIC P1Config,P2Config,sw1,sw2,sw4,sw5,off
+        EXTERN Delay1sec,IDs,SortIdx,Size
+        RSEG CODE
+
+          
+P1Config  bic.b   #0x0F,&P1DIR ; P1.0-P1.3 input
+          mov.b   #0x00,&P1OUT
+          ret
+
+P2Config  bic.b   #0xC0,&P2SEL ;P2 GPIO
+          bis.b   #0xFF,&P2DIR ; P2 output                  
+          mov.b   #0x00,&P2OUT
+          ret
+
+
+;-----------SWState1-----------------
+
+        
+sw1     bit.b   #1,&P1IN
+        jnz     finito
+        mov.b   R5,&P2OUT
+        inc.b     R5
+        call    #Delay1sec
+        jmp      sw1
+        
+          
+        
+;-----------SWState2-----------------
+            
+            
+sw2         bit.b   #2,&P1IN
+            jnz finito
+            mov.b   R6,&P2OUT
+            dec.b     R6
+            call #Delay1sec
+            jmp sw2
+            
+        
+        
+;-----------SWState4-----------------        
+            
+sw4         bit.b   #4,&P1IN
+            jnz finito       
+            mov.b @R7+,&P2OUT              ;show number id on led
+            sub.b #48,&P2OUT                ;sub to get digit from ascii
+            call #Delay1sec
+            dec R8                          ;counter for IDs
+            jnz sw4
+           
+            mov #16,R8
+            sub #16,R7
+            jmp sw4
+
+        
+;-----------SWState5-----------------        
+            
+sw5         bit.b   #5,&P1IN
+            jnz finito
+            mov R7,R12                        ;reg save adress
+            
+print       mov R12,R7                        ;reset adress
+            add @R4,R7                        ;add idx to adress
+            mov.b @R7,&P2OUT
+            sub.b #48,&P2OUT                ;sub to get digit from ascii
+            call #Delay1sec
+            incd R4                           ;array++
+            dec R10                          ;counter for SortIdx
+            jnz print            
+
+            jmp sw5
+            
+            
+;---------Not Any of the States--------------    
+
+
+off  bic.b #0xFF,&P2OUT
+     jmp $
+
+;----------------------- 
+finito  ret 
+        ENDMOD
+;-----------Delay-Routine-------------
+        MODULE Delay
+        PUBLIC Delay100us,Delay1sec
+        RSEG CODE
+Delay100us      mov.w   #52429,R15              
+L1              dec.w   R15                     
+                jnz     L1                                    
+                ret
+            
+Delay1sec       mov.w   #10,R13              
+L2              call    #Delay100us
+                dec.w   R13                     
+                jnz     L2                                    
+                ret
+          ENDMOD
+        
+            END

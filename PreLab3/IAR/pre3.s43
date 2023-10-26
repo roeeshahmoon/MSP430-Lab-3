@@ -1,0 +1,55 @@
+#include "msp430g2553.h" // #include <msp430.h> - can be used as well
+
+            NAME Main
+            PUBLIC Main
+            EXTERN sw1,sw2,sw4,off,P1Config,P2Config
+            ORG    0200h
+IDs         DB  "0656475916508332"
+
+          
+;-------------------------------------------------------------------------------
+            ORG      0C000h                  ; Program Reset
+
+;-------------------------------------------------------------------------------
+Main        mov.w   #03FFh,SP               ; Initialize stackpointer
+StopWDT     mov.w   #WDTPW+WDTHOLD,&WDTCTL  ; Stop WDT
+            call    #P1Config
+            call    #P2Config
+	    		
+Mainloop    clr     R5        ;reg for SW1
+            mov #0xFF,R6      ;reg for SW2     
+            mov #IDs,R7       ;reg for SW4 
+            mov #16,R8        ;number of chars in string
+
+  
+            bit.b #1,&P1IN
+            jz L1
+            
+            bit.b #2,&P1IN
+            jz L2
+            
+            bit.b #4,&P1IN
+            jz L4
+            
+            jmp Lnone
+            
+L1          call #sw1
+            jmp Mainloop
+
+L2          call #sw2
+            jmp Mainloop
+
+L4          call #sw4
+            jmp Mainloop
+
+Lnone        call #off
+            
+            
+            jmp Mainloop
+           
+;-------------------------------------------------------------------------------
+;           Interrupt Vectors
+;-------------------------------------------------------------------------------
+            ORG     0FFFEh                  ; MSP430 RESET Vector
+            DW      Main                 ;
+            END

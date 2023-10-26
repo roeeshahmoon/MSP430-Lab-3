@@ -1,0 +1,64 @@
+#include "msp430g2553.h" // #include <msp430.h> - can be used as well
+
+            NAME Main
+            PUBLIC Main,IDs,SortIdx,Size
+            EXTERN sw1,sw2,sw4,sw5,off,P1Config,P2Config
+            ORG    0200h
+SortIdx     DW   0,11,8,15,13,14,4,2,6,10,1,3,9,5,12,7
+Size        DW  17
+IDs         DB  "0656475916508332"
+          
+;-------------------------------------------------------------------------------
+            ORG      0C000h                  ; Program Reset
+
+;-------------------------------------------------------------------------------
+Main        mov.w   #03FFh,SP               ; Initialize stackpointer
+StopWDT     mov.w   #WDTPW+WDTHOLD,&WDTCTL  ; Stop WDT
+            call    #P1Config
+            call    #P2Config
+	    		
+Mainloop    clr     R5        ;reg for SW1
+            mov #0xFF,R6      ;reg for SW2     
+            mov #IDs,R7       ;reg for SW4 
+            mov #SortIdx,R4   ;reg for SW5
+            mov #16,R8        ;number of chars in string
+            mov #16,R10       ;counter in SortIdx
+            clr R14
+            bit.b #5,&P1IN
+            jz L5
+  
+            bit.b #1,&P1IN
+            jz L1
+            
+            bit.b #2,&P1IN
+            jz L2
+            
+            bit.b #4,&P1IN
+            jz L4
+            
+            jmp Lnone
+            
+L1          call #sw1
+            jmp Mainloop
+
+L2          call #sw2
+            jmp Mainloop
+
+L4          call #sw4
+            jmp Mainloop
+
+L5          call #sw5
+            jmp Mainloop
+
+
+Lnone        call #off
+            
+            
+            jmp Mainloop
+           
+;-------------------------------------------------------------------------------
+;           Interrupt Vectors
+;-------------------------------------------------------------------------------
+            ORG     0FFFEh                  ; MSP430 RESET Vector
+            DW      Main                 ;
+            END
